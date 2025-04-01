@@ -4,7 +4,38 @@ const db = require('./database');
 const cors = require('cors');
 const { validateStringParam, validateDiffParam } = require('./functions');
 
-app.use(cors());
+const allowedOrigins = [
+    'http://*.reverier16.com',
+    'https://*.reverier16.com'
+];
+
+const corsOptions = {
+    origin: function (origin, callback) {
+        if (!origin) {
+            // 服务器端发起的请求没有 origin 字段，允许通过
+            return callback(null, true);
+        }
+        const isAllowed = allowedOrigins.some(pattern => {
+        if (pattern.includes('*')) {
+            const regexPattern = pattern.replace('*', '[^.]+');
+            const regex = new RegExp(regexPattern);
+            return regex.test(origin);
+        }
+        return pattern === origin;
+        });
+
+        if (isAllowed) {
+        callback(null, true);
+        } else {
+        callback(new Error('Not allowed by CORS'));
+        callback(null, false);
+        }
+    },
+    methods: 'GET, POST, PUT, DELETE, PATCH',
+    allowedHeaders: '*'
+};
+
+app.use(cors(corsOptions));
 
 app.get('/reactions', validateStringParam('targetId'), (req, res) => {  // 获取特定 targetId 已收到的所有 reactions
     const targetId = req.query.targetId;
